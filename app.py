@@ -4,7 +4,7 @@ import pandas as pd
 
 # --- CONFIG ---
 st.set_page_config(page_title="Pie Chart - Pizza Rankings", layout="centered")
-ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "friend_email@gmail.com"]
+ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "streamlit-app@pizza-rankings.iam.gserviceaccount.com"]
 
 # --- AUTH ---
 user_email = st.text_input("Enter your email:")
