@@ -1,66 +1,52 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 # --- CONFIG ---
 st.set_page_config(page_title="Pie Chart - Pizza Rankings", layout="centered")
-ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "streamlit-app@pizza-rankings.iam.gserviceaccount.com"]
+ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"] # Update these!
+
+# The CSV export link of your Google Sheet
+# To get this: Take your sheet link and change everything after /edit... to /export?format=csv
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1ni2YaFbJv86Mz0TaGqYxlTf0fn3jJSVk49b30rRUDlI/export?format=csv"
 
 # --- AUTH ---
 user_email = st.text_input("Enter your email:")
 
 if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
-    # Connect to Google Sheets
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    
-    # Read existing data
-    df = conn.read()
-
     st.title("🍕 Pie Chart - Pizza Rankings")
 
     # --- INPUT FORM ---
     with st.expander("➕ Log a New Pizza", expanded=True):
-        with st.form("pizza_form"):
-            name = st.text_input("Restaurant Name")
-            pizza = st.text_input("Pizza Name/Type")
-            loc = st.text_input("Location")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                crust = st.slider("Crust (Flop?)", 0, 10, 5)
-                sauce = st.slider("Sauce", 0, 10, 5)
-                ingred = st.slider("Ingredients", 0, 10, 5)
-            with col2:
-                portion = st.slider("Portion Size", 0, 10, 5)
-                price = st.slider("Price Value", 0, 10, 5)
-            
-            submit = st.form_submit_button("Save to Leaderboard")
-
-            if submit:
-                # Math logic
-                avg = (crust + sauce + ingred + portion + price) / 5
-                rec = "✅ YES" if avg > 8 else "❌ NO"
-                
-                # Create new row
-                new_data = pd.DataFrame([{
-                    "Restaurant": name, "Pizza": pizza, "Location": loc,
-                    "Crust": crust, "Sauce": sauce, "Ingredients": ingred,
-                    "Portion": portion, "Price": price, "Average": avg, "Recommend": rec
-                }])
-                
-                # Update Google Sheet
-                updated_df = pd.concat([df, new_data], ignore_index=True)
-                conn.update(data=updated_df)
-                st.success(f"Log Saved! Score: {avg}")
+        # We'll use a standard Google Form link or a simplified Save button
+        # For now, let's keep the UI but we will use a different save logic
+        st.info("To save data permanently, we'll use a direct link to the sheet below.")
+        
+        name = st.text_input("Restaurant Name")
+        pizza = st.text_input("Pizza Name/Type")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            crust = st.slider("Crust", 0, 10, 5)
+            sauce = st.slider("Sauce", 0, 10, 5)
+        with col2:
+            portion = st.slider("Portion", 0, 10, 5)
+            price = st.slider("Price", 0, 10, 5)
+        
+        avg = (crust + sauce + portion + price) / 4
+        
+        if st.button("Generate Log Entry"):
+            st.code(f"{name}, {pizza}, {avg}, {'✅ YES' if avg > 8 else '❌ NO'}")
+            st.success("Entry ready! Tap the 'Open Sheet' button below to paste it at the bottom.")
+            st.link_button("📂 Open Google Sheet to Paste", "https://docs.google.com/spreadsheets/d/1ni2YaFbJv86Mz0TaGqYxlTf0fn3jJSVk49b30rRUDlI/edit")
 
     # --- LEADERBOARD ---
     st.header("🏆 The Official Leaderboard")
-    if not df.empty:
-        leaderboard = df.sort_values(by="Average", ascending=False)
-        st.dataframe(leaderboard[["Restaurant", "Pizza", "Average", "Recommend"]], use_container_width=True)
-    else:
-        st.write("No rankings yet. Start eating!")
+    try:
+        df = pd.read_csv(SHEET_CSV_URL)
+        st.dataframe(df, use_container_width=True)
+    except:
+        st.write("Click 'Open Sheet' to add your first pizza!")
 
 else:
     if user_email:
-        st.warning("Access denied. Please check your email or contact the admin.")
+        st.warning("Access denied.")
