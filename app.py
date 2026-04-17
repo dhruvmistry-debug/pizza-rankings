@@ -44,7 +44,7 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
     try:
         import time
 # This adds a "random" number to the end so Google thinks it's a new request
-df = pd.read_csv(f"{SHEET_CSV_URL}&cache_bust={time.time()}")
+        df = pd.read_csv(f"{SHEET_CSV_URL}&cache_bust={time.time()}")
         st.dataframe(df, use_container_width=True)
     except:
         st.write("Click 'Open Sheet' to add your first pizza!")
