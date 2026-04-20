@@ -68,7 +68,14 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- GOOGLE SHEETS CONNECTION ---
-conn = st.connection("gsheets", type=GSheetsConnection)
+# --- GOOGLE SHEETS CONNECTION ---
+# We pull the raw secrets and fix the key formatting manually
+secrets_dict = st.secrets["connections"]["gsheets"].to_dict()
+if "private_key" in secrets_dict:
+    # This line replaces literal '\n' text with actual line breaks
+    secrets_dict["private_key"] = secrets_dict["private_key"].replace("\\n", "\n")
+
+conn = st.connection("gsheets", type=GSheetsConnection, **secrets_dict)
 ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"]
 
 # --- APP CONTENT ---
