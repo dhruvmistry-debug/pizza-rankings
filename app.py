@@ -109,12 +109,12 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
             st.markdown("### SCORECARD")
             c1, c2 = st.columns(2)
             with c1:
-                crust = st.slider("Crust - Was there any flop or did it hold?", 0, 10, 5)
-                sauce = st.slider("Sauce - How was the quality of that tomato base?", 0, 10, 5)
-                quality = st.slider("Ingredients - did the toppings run the show or was it a perfect balance?", 0, 10, 5)
+                crust = st.slider("Crust - Did it have that NY fold or was it a flop?", 0, 10, 5)
+                sauce = st.slider("Sauce - Is that tomato base hitting or is it just red water?", 0, 10, 5)
+                quality = st.slider("Ingredients - High-end goods or did they skimp on the toppings?", 0, 10, 5)
             with c2:
-                portion = st.slider("Portion - Were they generous to give you a classic NY pie?", 0, 10, 5)
-                price = st.slider("Value - How badly did it set you back?", 0, 10, 5)
+                portion = st.slider("Portion - Are we talkin' a massive NYC style or a tiny appetizer?", 0, 10, 5)
+                price = st.slider("Value - Did you get a steal or did they rob you for a pie?", 0, 10, 5)
             
             submit = st.form_submit_button("LOCK IT IN")
 
