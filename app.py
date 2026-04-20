@@ -13,63 +13,69 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
     st.title("🍕 Pie Chart - Pizza Rankings")
 
     # Connect to Google Sheets
-    # Ensure your Sheet is "Anyone with the link can EDIT" for this to work easily
     conn = st.connection("gsheets", type=GSheetsConnection)
 
     # --- INPUT FORM ---
     with st.expander("➕ Log a New Pizza", expanded=True):
         name = st.text_input("Restaurant Name")
-        pizza = st.text_input("Pizza Name/Type")
+        pizza = st.text_input("Pizza Ordered")
+        location = st.text_input("Location")
         
         col1, col2 = st.columns(2)
         with col1:
-            crust = st.slider("Crust", 0, 10, 5)
-            sauce = st.slider("Sauce", 0, 10, 5)
+            crust = st.slider("Crust (0-10)", 0, 10, 5)
+            sauce = st.slider("Sauce (0-10)", 0, 10, 5)
+            quality = st.slider("Ingredient quality (0-10)", 0, 10, 5)
         with col2:
-            portion = st.slider("Portion", 0, 10, 5)
-            price = st.slider("Price", 0, 10, 5)
+            portion = st.slider("Portion (0-10)", 0, 10, 5)
+            price = st.slider("Price (0-10)", 0, 10, 5)
         
-        avg = (crust + sauce + portion + price) / 4
+        # Calculate average based on the 5 specific categories in your sheet
+        avg = (crust + sauce + quality + portion + price) / 5
         
         if st.button("Save to Leaderboard"):
             if name and pizza:
                 # Get current data
-                df = conn.read()
+                df = conn.read(ttl=0)
                 
-                # Create new row
+                # Create new row matching your sheet's exact column names
                 new_row = pd.DataFrame([{
                     "Restaurant": name,
-                    "Pizza": pizza,
-                    "Average Score": avg,
-                    "Recommended": '✅ YES' if avg > 8 else '❌ NO'
+                    "Pizza Ordered": pizza,
+                    "Location": location,
+                    "Crust (0-10)": crust,
+                    "Sauce (0-10)": sauce,
+                    "Ingredient quality (0-10)": quality,
+                    "Portion (0-10)": portion,
+                    "Price (0-10)": price,
+                    "Average Score": round(avg, 1),
+                    "Recommend?": 'Must Try' if avg > 8 else 'Dont Bother'
                 }])
                 
-                # Add to existing data
+                # Add to existing data and update
                 updated_df = pd.concat([df, new_row], ignore_index=True)
-                
-                # Write back to sheet
-                # IMPORTANT: This requires the sheet to be Shared as "Editor" 
-                # with the email found in your Streamlit Service Account or 
-                # properly configured in Secrets.
                 conn.update(data=updated_df)
                 
-                st.cache_data.clear() # Clear cache so leaderboard updates immediately
-                st.success("Pizza logged!")
+                st.cache_data.clear() 
+                st.success(f"Added {name} to the rankings!")
                 st.rerun() 
             else:
-                st.error("Please fill in the names!")
+                st.error("Please enter the Restaurant and Pizza name.")
 
     # --- LEADERBOARD ---
     st.header("🏆 The Official Leaderboard")
     
-    # Load data with ttl=0 to always get the latest
+    # Load data
     data = conn.read(ttl=0)
     
     if not data.empty:
-        # Sorting and Ranking logic
+        # Sort by Average Score and add Rank
         leaderboard = data.sort_values(by="Average Score", ascending=False).reset_index(drop=True)
         leaderboard.index += 1
-        st.table(leaderboard) # Using st.table for a cleaner leaderboard look
+        leaderboard.index.name = "Rank"
+        
+        # Display only the main columns for the leaderboard view
+        st.dataframe(leaderboard[["Restaurant", "Pizza Ordered", "Average Score", "Recommend?"]], use_container_width=True)
     else:
         st.info("The leaderboard is currently empty.")
 
