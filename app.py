@@ -1,13 +1,14 @@
 import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
 # --- CONFIG ---
 st.set_page_config(page_title="Pie Chart - Pizza Rankings", layout="centered")
-ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"] # Update these!
+ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"]
 
-# The CSV export link of your Google Sheet
-# To get this: Take your sheet link and change everything after /edit... to /export?format=csv
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1ni2YaFbJv86Mz0TaGqYxlTf0fn3jJSVk49b30rRUDlI/export?format=csv"
+# --- GOOGLE SHEETS CONNECTION ---
+# This creates a connection object using your secrets
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- AUTH ---
 user_email = st.text_input("Enter your email:")
@@ -17,10 +18,6 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
 
     # --- INPUT FORM ---
     with st.expander("➕ Log a New Pizza", expanded=True):
-        # We'll use a standard Google Form link or a simplified Save button
-        # For now, let's keep the UI but we will use a different save logic
-        st.info("To save data permanently, we'll use a direct link to the sheet below.")
-        
         name = st.text_input("Restaurant Name")
         pizza = st.text_input("Pizza Name/Type")
         
@@ -34,20 +31,43 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
         
         avg = (crust + sauce + portion + price) / 4
         
-        if st.button("Generate Log Entry"):
-            st.code(f"{name}, {pizza}, {avg}, {'✅ YES' if avg > 8 else '❌ NO'}")
-            st.success("Entry ready! Tap the 'Open Sheet' button below to paste it at the bottom.")
-            st.link_button("📂 Open Google Sheet to Paste", "https://docs.google.com/spreadsheets/d/1ni2YaFbJv86Mz0TaGqYxlTf0fn3jJSVk49b30rRUDlI/edit")
+        if st.button("Save to Leaderboard"):
+            if name and pizza:
+                # 1. Fetch existing data
+                existing_data = conn.read(ttl=0) # ttl=0 ensures we get fresh data
+                
+                # 2. Create new row
+                new_entry = pd.DataFrame([{
+                    "Restaurant": name,
+                    "Pizza": pizza,
+                    "Average Score": avg,
+                    "Recommended": '✅ YES' if avg > 8 else '❌ NO'
+                }])
+                
+                # 3. Combine and Update
+                updated_df = pd.concat([existing_data, new_entry], ignore_index=True)
+                conn.update(data=updated_df)
+                
+                st.success(f"Saved {name} to the leaderboard!")
+                st.balloons()
+            else:
+                st.error("Please enter a name and pizza type.")
 
     # --- LEADERBOARD ---
     st.header("🏆 The Official Leaderboard")
-    try:
-        import time
-# This adds a "random" number to the end so Google thinks it's a new request
-        df = pd.read_csv(f"{SHEET_CSV_URL}&cache_bust={time.time()}")
+    
+    # Read fresh data
+    df = conn.read(ttl=0)
+    
+    if not df.empty:
+        # Sort by Average Score and add Rank
+        df = df.sort_values(by="Average Score", ascending=False).reset_index(drop=True)
+        df.index = df.index + 1 # Start ranking at 1 instead of 0
+        df.index.name = "Rank"
+        
         st.dataframe(df, use_container_width=True)
-    except:
-        st.write("Click 'Open Sheet' to add your first pizza!")
+    else:
+        st.info("No rankings yet. Be the first to log a pizza!")
 
 else:
     if user_email:
