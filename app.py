@@ -152,3 +152,45 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
 else:
     if user_email:
         st.error("Access Denied. You're not on the guest list.")
+
+
+# --- SPIN THE PIE FEATURE ---
+    st.markdown("---")
+    st.markdown("<h2>CAN'T DECIDE? SPIN THE PIE!</h2>", unsafe_allow_html=True)
+    
+    if not df.empty:
+        # Get unique locations from your data
+        locations = df["Location"].unique().tolist()
+        
+        col_spin1, col_spin2 = st.columns([1, 2])
+        
+        with col_spin1:
+            selected_loc = st.selectbox("WHERE ARE YOU?", ["Everywhere"] + locations)
+        
+        with col_spin2:
+            st.write("") # Spacing
+            if st.button("🎰 SPIN FOR A SLICE"):
+                # Filter data based on choice
+                if selected_loc == "Everywhere":
+                    pool = df
+                else:
+                    pool = df[df["Location"] == selected_loc]
+                
+                if not pool.empty:
+                    # The "Spin" logic
+                    choice = pool.sample(n=1).iloc[0]
+                    
+                    # Funky Reveal
+                    st.markdown(f"""
+                        <div style="background: #FFD700; padding: 20px; border-radius: 10px; border: 5px dashed #FF4500; text-align: center;">
+                            <h3 style="color: black; font-family: 'Bangers'; margin: 0;">COWABUNGA! GO TO:</h3>
+                            <h1 style="color: #FF4500; font-family: 'Permanent Marker'; font-size: 3rem; margin: 10px 0;">{choice['Restaurant']}</h1>
+                            <p style="color: black; font-weight: bold;">Try the: {choice['Pizza Ordered']}</p>
+                            <p style="color: #333; font-style: italic;">Score: {choice['Average Score']} / 10</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    st.balloons()
+                else:
+                    st.warning("No spots found in that area yet. Log one!")
+    else:
+        st.info("The wheel is locked until someone logs a pizza!")
