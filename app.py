@@ -104,9 +104,9 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
         with st.form("pizza_entry", clear_on_submit=True):
             name = st.text_input("RESTAURANT")
             pizza = st.text_input("THE SLICE")
-            loc = st.text_input("THE BLOCK (Location)")
+            loc = st.text_input("THE LOCATION")
             
-            st.markdown("### THE SCORECARD")
+            st.markdown("### SCORECARD")
             c1, c2 = st.columns(2)
             with c1:
                 crust = st.slider("Crust", 0, 10, 5)
