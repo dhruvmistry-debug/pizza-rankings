@@ -6,15 +6,15 @@ import pandas as pd
 st.set_page_config(page_title="Pie Chart - Pizza Rankings", layout="centered")
 ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"]
 
-# --- GOOGLE SHEETS CONNECTION ---
-# This creates a connection object using your secrets
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 # --- AUTH ---
 user_email = st.text_input("Enter your email:")
 
 if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
     st.title("🍕 Pie Chart - Pizza Rankings")
+
+    # Connect to Google Sheets
+    # Ensure your Sheet is "Anyone with the link can EDIT" for this to work easily
+    conn = st.connection("gsheets", type=GSheetsConnection)
 
     # --- INPUT FORM ---
     with st.expander("➕ Log a New Pizza", expanded=True):
@@ -33,41 +33,45 @@ if user_email.lower() in [e.lower() for e in ALLOWED_EMAILS]:
         
         if st.button("Save to Leaderboard"):
             if name and pizza:
-                # 1. Fetch existing data
-                existing_data = conn.read(ttl=0) # ttl=0 ensures we get fresh data
+                # Get current data
+                df = conn.read()
                 
-                # 2. Create new row
-                new_entry = pd.DataFrame([{
+                # Create new row
+                new_row = pd.DataFrame([{
                     "Restaurant": name,
                     "Pizza": pizza,
                     "Average Score": avg,
                     "Recommended": '✅ YES' if avg > 8 else '❌ NO'
                 }])
                 
-                # 3. Combine and Update
-                updated_df = pd.concat([existing_data, new_entry], ignore_index=True)
+                # Add to existing data
+                updated_df = pd.concat([df, new_row], ignore_index=True)
+                
+                # Write back to sheet
+                # IMPORTANT: This requires the sheet to be Shared as "Editor" 
+                # with the email found in your Streamlit Service Account or 
+                # properly configured in Secrets.
                 conn.update(data=updated_df)
                 
-                st.success(f"Saved {name} to the leaderboard!")
-                st.balloons()
+                st.cache_data.clear() # Clear cache so leaderboard updates immediately
+                st.success("Pizza logged!")
+                st.rerun() 
             else:
-                st.error("Please enter a name and pizza type.")
+                st.error("Please fill in the names!")
 
     # --- LEADERBOARD ---
     st.header("🏆 The Official Leaderboard")
     
-    # Read fresh data
-    df = conn.read(ttl=0)
+    # Load data with ttl=0 to always get the latest
+    data = conn.read(ttl=0)
     
-    if not df.empty:
-        # Sort by Average Score and add Rank
-        df = df.sort_values(by="Average Score", ascending=False).reset_index(drop=True)
-        df.index = df.index + 1 # Start ranking at 1 instead of 0
-        df.index.name = "Rank"
-        
-        st.dataframe(df, use_container_width=True)
+    if not data.empty:
+        # Sorting and Ranking logic
+        leaderboard = data.sort_values(by="Average Score", ascending=False).reset_index(drop=True)
+        leaderboard.index += 1
+        st.table(leaderboard) # Using st.table for a cleaner leaderboard look
     else:
-        st.info("No rankings yet. Be the first to log a pizza!")
+        st.info("The leaderboard is currently empty.")
 
 else:
     if user_email:
