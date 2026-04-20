@@ -32,20 +32,14 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 2. THE CONNECTION HANDSHAKE (Fixes the ValueError) ---
-try:
-    # We pull the raw secrets dictionary
-    creds = st.secrets["connections"]["gsheets"].to_dict()
-    
-    # We force the private key to have real newlines instead of the text "\n"
-    if "private_key" in creds:
-        creds["private_key"] = creds["private_key"].replace("\\n", "\n")
-    
-    # Pass the fixed credentials into the connection
-    conn = st.connection("gsheets", type=GSheetsConnection, **creds)
-except Exception as e:
-    st.error(f"⚠️ Connection Config Error: {e}")
-    st.stop()
+# --- THE CONNECTION HANDSHAKE ---
+creds = st.secrets["connections"]["gsheets"].to_dict()
+
+# This part is mandatory when using single quotes in Secrets
+if "private_key" in creds:
+    creds["private_key"] = creds["private_key"].replace("\\n", "\n")
+
+conn = st.connection("gsheets", type=GSheetsConnection, **creds)
 
 # --- 3. AUTH & ACCESS CONTROL ---
 ALLOWED_EMAILS = ["dhruv.mistry@gmail.com", "pran25@hotmail.co.uk"]
